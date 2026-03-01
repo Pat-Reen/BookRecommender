@@ -7,6 +7,16 @@ from dotenv import load_dotenv
 from db import init_db, add_book, get_books, delete_book
 
 load_dotenv()
+
+# On Streamlit Cloud, secrets live in st.secrets rather than env vars — bridge them.
+try:
+    import streamlit as _st
+    for _k in ("ANTHROPIC_API_KEY", "DATABASE_URL"):
+        if not os.getenv(_k) and _k in _st.secrets:
+            os.environ[_k] = _st.secrets[_k]
+except Exception:
+    pass
+
 init_db()
 
 # ── Page config & styling ──────────────────────────────────────────────────────

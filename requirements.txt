@@ -1,3 +1,4 @@
 anthropic
 streamlit
 python-dotenv
+psycopg2-binary

@@ -1,50 +1,66 @@
-import sqlite3
-from pathlib import Path
-
-DB_PATH = Path(__file__).parent / "books.db"
+import os
+import psycopg2
+from psycopg2.extras import RealDictCursor
 
 
 def _connect():
-    return sqlite3.connect(DB_PATH)
+    return psycopg2.connect(os.getenv("DATABASE_URL"))
 
 
 def init_db():
-    with _connect() as con:
-        con.execute("""
-            CREATE TABLE IF NOT EXISTS books (
-                id         INTEGER PRIMARY KEY AUTOINCREMENT,
-                title      TEXT NOT NULL,
-                author     TEXT NOT NULL,
-                year       INTEGER,
-                rating     INTEGER,
-                format     TEXT,
-                status     TEXT,
-                notes      TEXT,
-                date_added TEXT DEFAULT (datetime('now'))
-            )
-        """)
+    con = _connect()
+    try:
+        with con.cursor() as cur:
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS books (
+                    id         SERIAL PRIMARY KEY,
+                    title      TEXT NOT NULL,
+                    author     TEXT NOT NULL,
+                    year       INTEGER,
+                    rating     INTEGER,
+                    format     TEXT,
+                    status     TEXT,
+                    notes      TEXT,
+                    date_added TIMESTAMP DEFAULT NOW()
+                )
+            """)
+        con.commit()
+    finally:
+        con.close()
 
 
 def add_book(title, author, year=None, rating=None, format=None, status="read", notes=None):
-    with _connect() as con:
-        con.execute(
-            """
-            INSERT INTO books (title, author, year, rating, format, status, notes)
-            VALUES (?, ?, ?, ?, ?, ?, ?)
-            """,
-            (title, author, year, rating, format, status, notes),
-        )
+    con = _connect()
+    try:
+        with con.cursor() as cur:
+            cur.execute(
+                """
+                INSERT INTO books (title, author, year, rating, format, status, notes)
+                VALUES (%s, %s, %s, %s, %s, %s, %s)
+                """,
+                (title, author, year, rating, format, status, notes),
+            )
+        con.commit()
+    finally:
+        con.close()
 
 
 def get_books():
-    with _connect() as con:
-        con.row_factory = sqlite3.Row
-        rows = con.execute(
-            "SELECT * FROM books ORDER BY date_added DESC"
-        ).fetchall()
+    con = _connect()
+    try:
+        with con.cursor(cursor_factory=RealDictCursor) as cur:
+            cur.execute("SELECT * FROM books ORDER BY date_added DESC")
+            rows = cur.fetchall()
+    finally:
+        con.close()
     return [dict(r) for r in rows]
 
 
 def delete_book(book_id):
-    with _connect() as con:
-        con.execute("DELETE FROM books WHERE id = ?", (book_id,))
+    con = _connect()
+    try:
+        with con.cursor() as cur:
+            cur.execute("DELETE FROM books WHERE id = %s", (book_id,))
+        con.commit()
+    finally:
+        con.close()
