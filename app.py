@@ -433,6 +433,7 @@ with tab_recommend:
                 parsed = parse_recommendations(raw)
                 # Fallback to raw markdown if parsing fails
                 st.session_state.recs = parsed or [{"title": None, "author": None, "year": None, "md": raw}]
+                st.rerun()
             except anthropic.AuthenticationError:
                 st.error("Invalid API key. Check your ANTHROPIC_API_KEY in .env.")
             except Exception as exc:
