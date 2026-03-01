@@ -206,11 +206,11 @@ with tab_library:
                     st.caption(" · ".join(meta))
                 if b["notes"]:
                     st.caption(b["notes"])
-                btn_edit, btn_del, _ = st.columns([1, 1, 8])
-                if btn_edit.button("✏️", key=f"edit_{b['id']}"):
+                btn_edit, btn_del = st.columns(2)
+                if btn_edit.button("✏️ Edit", key=f"edit_{b['id']}", use_container_width=True):
                     st.session_state.editing_book = b["id"]
                     st.rerun()
-                if btn_del.button("🗑", key=f"del_{b['id']}"):
+                if btn_del.button("🗑 Delete", key=f"del_{b['id']}", use_container_width=True):
                     delete_book(b["id"])
                     if st.session_state.editing_book == b["id"]:
                         st.session_state.editing_book = None
