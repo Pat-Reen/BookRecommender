@@ -194,24 +194,22 @@ with tab_library:
         status_options = ["read", "want", "dnf"]
         for b in books:
             with st.container(border=True):
-                col_info, col_btns = st.columns([6, 1])
-                with col_info:
-                    year_str = f" ({b['year']})" if b["year"] else ""
-                    st.markdown(f"**{b['title']}**{year_str}  \n*{b['author']}*")
-                    meta = [p for p in [stars(b["rating"]) if b["rating"] else None, b["status"], b["format"]] if p]
-                    if meta:
-                        st.caption(" · ".join(meta))
-                    if b["notes"]:
-                        st.caption(b["notes"])
-                with col_btns:
-                    if st.button("✏️", key=f"edit_{b['id']}"):
-                        st.session_state.editing_book = b["id"]
-                        st.rerun()
-                    if st.button("🗑", key=f"del_{b['id']}"):
-                        delete_book(b["id"])
-                        if st.session_state.editing_book == b["id"]:
-                            st.session_state.editing_book = None
-                        st.rerun()
+                year_str = f" ({b['year']})" if b["year"] else ""
+                st.markdown(f"**{b['title']}**{year_str}  \n*{b['author']}*")
+                meta = [p for p in [stars(b["rating"]) if b["rating"] else None, b["status"], b["format"]] if p]
+                if meta:
+                    st.caption(" · ".join(meta))
+                if b["notes"]:
+                    st.caption(b["notes"])
+                btn_edit, btn_del, _ = st.columns([1, 1, 8])
+                if btn_edit.button("✏️", key=f"edit_{b['id']}"):
+                    st.session_state.editing_book = b["id"]
+                    st.rerun()
+                if btn_del.button("🗑", key=f"del_{b['id']}"):
+                    delete_book(b["id"])
+                    if st.session_state.editing_book == b["id"]:
+                        st.session_state.editing_book = None
+                    st.rerun()
 
             if st.session_state.editing_book == b["id"]:
                 with st.form(f"edit_form_{b['id']}"):
