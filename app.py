@@ -399,6 +399,11 @@ with tab_recommend:
         st.session_state.added_recs = set()
     if "added_to_list_recs" not in st.session_state:
         st.session_state.added_to_list_recs = set()
+    if "regen_clicked" not in st.session_state:
+        st.session_state.regen_clicked = False
+
+    def _on_regen():
+        st.session_state.regen_clicked = True
 
     books = get_books()
     is_empty = len(books) == 0
@@ -414,9 +419,11 @@ with tab_recommend:
 
     rec_col1, rec_col2 = st.columns([3, 1])
     get_btn = rec_col1.button("Recommend", key="recommend_btn", disabled=is_empty, use_container_width=True)
-    regen_btn = rec_col2.button("↺", key="regen_btn", disabled=is_empty or not st.session_state.recs, use_container_width=True)
+    rec_col2.button("↺", key="regen_btn", disabled=is_empty or not st.session_state.recs, use_container_width=True, on_click=_on_regen)
 
+    regen_btn = st.session_state.regen_clicked
     if get_btn or regen_btn:
+        st.session_state.regen_clicked = False
         st.session_state.added_recs = set()
         st.session_state.added_to_list_recs = set()
         st.session_state.adding_rec = None
