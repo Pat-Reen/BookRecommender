@@ -397,8 +397,8 @@ with tab_recommend:
     is_empty = len(books) == 0
 
     mood = st.text_area(
-        "What are you in the mood for? (optional)",
-        placeholder="e.g. something dark and philosophical, or a page-turner set in space…",
+        "What are you in the mood for?",
+        placeholder="Optional e.g. something dark and philosophical, or a page-turner set in space…",
         height=80,
     )
 
