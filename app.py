@@ -63,6 +63,11 @@ st.markdown(
         color: #2d6a4f !important;
         border-bottom-color: #2d6a4f !important;
     }
+
+    /* Keep button rows horizontal on mobile */
+    [data-testid="stHorizontalBlock"] {
+        flex-wrap: nowrap !important;
+    }
     </style>
     """,
     unsafe_allow_html=True,
