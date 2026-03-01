@@ -24,6 +24,63 @@ def init_db():
                     date_added TIMESTAMP DEFAULT NOW()
                 )
             """)
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS reading_list (
+                    id         SERIAL PRIMARY KEY,
+                    title      TEXT NOT NULL,
+                    author     TEXT NOT NULL,
+                    year       INTEGER,
+                    notes      TEXT,
+                    date_added TIMESTAMP DEFAULT NOW()
+                )
+            """)
+        con.commit()
+    finally:
+        con.close()
+
+
+def add_to_reading_list(title, author, year=None, notes=None):
+    con = _connect()
+    try:
+        with con.cursor() as cur:
+            cur.execute(
+                "INSERT INTO reading_list (title, author, year, notes) VALUES (%s, %s, %s, %s)",
+                (title, author, year, notes),
+            )
+        con.commit()
+    finally:
+        con.close()
+
+
+def get_reading_list():
+    con = _connect()
+    try:
+        with con.cursor(cursor_factory=RealDictCursor) as cur:
+            cur.execute("SELECT * FROM reading_list ORDER BY date_added DESC")
+            rows = cur.fetchall()
+    finally:
+        con.close()
+    return [dict(r) for r in rows]
+
+
+def update_reading_list_item(item_id, title, author, year=None, notes=None):
+    con = _connect()
+    try:
+        with con.cursor() as cur:
+            cur.execute(
+                "UPDATE reading_list SET title=%s, author=%s, year=%s, notes=%s WHERE id=%s",
+                (title, author, year, notes, item_id),
+            )
+        con.commit()
+    finally:
+        con.close()
+
+
+def delete_from_reading_list(item_id):
+    con = _connect()
+    try:
+        with con.cursor() as cur:
+            cur.execute("DELETE FROM reading_list WHERE id = %s", (item_id,))
         con.commit()
     finally:
         con.close()

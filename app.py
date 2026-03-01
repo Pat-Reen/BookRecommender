@@ -4,7 +4,10 @@ import anthropic
 import streamlit as st
 from dotenv import load_dotenv
 
-from db import init_db, add_book, get_books, update_book, delete_book
+from db import (
+    init_db, add_book, get_books, update_book, delete_book,
+    add_to_reading_list, get_reading_list, update_reading_list_item, delete_from_reading_list,
+)
 
 load_dotenv()
 
@@ -157,7 +160,7 @@ For each book output exactly:
 
 
 # ── Tabs ───────────────────────────────────────────────────────────────────────
-tab_library, tab_recommend = st.tabs(["My Library", "Recommend"])
+tab_library, tab_list, tab_recommend = st.tabs(["My Library", "My List", "Recommend"])
 
 # ── Tab 1: My Library ──────────────────────────────────────────────────────────
 with tab_library:
@@ -257,7 +260,129 @@ with tab_library:
                     st.rerun()
 
 
-# ── Tab 2: Recommend ───────────────────────────────────────────────────────────
+# ── Tab 2: My List ─────────────────────────────────────────────────────────────
+with tab_list:
+    with st.expander("Add a book", expanded=False):
+        with st.form("add_list_form", clear_on_submit=True):
+            l_col1, l_col2 = st.columns(2)
+            with l_col1:
+                l_title = st.text_input("Title *")
+                l_author = st.text_input("Author *")
+            with l_col2:
+                l_year = st.number_input("Year", min_value=0, max_value=2100, value=None, step=1)
+                l_notes = st.text_area("Notes")
+            l_submitted = st.form_submit_button("Add to My List")
+
+        if l_submitted:
+            if not l_title.strip() or not l_author.strip():
+                st.error("Title and Author are required.")
+            else:
+                add_to_reading_list(
+                    title=l_title.strip(),
+                    author=l_author.strip(),
+                    year=int(l_year) if l_year else None,
+                    notes=l_notes.strip() or None,
+                )
+                st.success(f"Added «{l_title}» to your list!")
+                st.rerun()
+
+    if "editing_list_item" not in st.session_state:
+        st.session_state.editing_list_item = None
+    if "moving_list_item" not in st.session_state:
+        st.session_state.moving_list_item = None
+
+    reading_list = get_reading_list()
+    if not reading_list:
+        st.info("Your reading list is empty. Add books above or push 'Add to My List' on a recommendation.")
+    else:
+        st.markdown(f"**{len(reading_list)} book{'s' if len(reading_list) != 1 else ''} on your list**")
+        for item in reading_list:
+            with st.container(border=True):
+                year_str = f" ({item['year']})" if item["year"] else ""
+                st.markdown(f"**{item['title']}**{year_str}  \n*{item['author']}*")
+                if item["notes"]:
+                    st.caption(item["notes"])
+
+                b1, b2, b3 = st.columns(3)
+                if b1.button("📚 Move to Library", key=f"move_list_{item['id']}", use_container_width=True):
+                    st.session_state.moving_list_item = item["id"]
+                    st.session_state.editing_list_item = None
+                    st.rerun()
+                if b2.button("✏️ Edit", key=f"edit_list_{item['id']}", use_container_width=True):
+                    st.session_state.editing_list_item = item["id"]
+                    st.session_state.moving_list_item = None
+                    st.rerun()
+                if b3.button("🗑 Delete", key=f"del_list_{item['id']}", use_container_width=True):
+                    delete_from_reading_list(item["id"])
+                    if st.session_state.editing_list_item == item["id"]:
+                        st.session_state.editing_list_item = None
+                    if st.session_state.moving_list_item == item["id"]:
+                        st.session_state.moving_list_item = None
+                    st.rerun()
+
+            if st.session_state.moving_list_item == item["id"]:
+                with st.form(f"move_to_lib_form_{item['id']}"):
+                    st.markdown(f"Moving **{item['title']}** to library — fill in the details:")
+                    m_col1, m_col2 = st.columns(2)
+                    with m_col1:
+                        m_rating = st.slider("Rating", 1, 5, 3)
+                        m_fmt = st.selectbox("Format", ["print", "ebook", "audio"])
+                    with m_col2:
+                        m_status = st.selectbox("Status", ["read", "want", "dnf"])
+                        m_notes = st.text_area("Notes", value=item["notes"] or "", height=68)
+                    mc1, mc2 = st.columns(2)
+                    move_confirmed = mc1.form_submit_button("Move to Library")
+                    move_cancelled = mc2.form_submit_button("Cancel")
+
+                if move_confirmed:
+                    add_book(
+                        title=item["title"],
+                        author=item["author"],
+                        year=item["year"],
+                        rating=m_rating,
+                        format=m_fmt,
+                        status=m_status,
+                        notes=m_notes.strip() or None,
+                    )
+                    delete_from_reading_list(item["id"])
+                    st.session_state.moving_list_item = None
+                    st.rerun()
+                elif move_cancelled:
+                    st.session_state.moving_list_item = None
+                    st.rerun()
+
+            if st.session_state.editing_list_item == item["id"]:
+                with st.form(f"edit_list_form_{item['id']}"):
+                    el_col1, el_col2 = st.columns(2)
+                    with el_col1:
+                        el_title = st.text_input("Title *", value=item["title"])
+                        el_author = st.text_input("Author *", value=item["author"])
+                    with el_col2:
+                        el_year = st.number_input("Year", min_value=0, max_value=2100, value=item["year"] or None, step=1)
+                        el_notes = st.text_area("Notes", value=item["notes"] or "")
+                    el_c1, el_c2 = st.columns(2)
+                    el_saved = el_c1.form_submit_button("Save")
+                    el_cancelled = el_c2.form_submit_button("Cancel")
+
+                if el_saved:
+                    if not el_title.strip() or not el_author.strip():
+                        st.error("Title and Author are required.")
+                    else:
+                        update_reading_list_item(
+                            item_id=item["id"],
+                            title=el_title.strip(),
+                            author=el_author.strip(),
+                            year=int(el_year) if el_year else None,
+                            notes=el_notes.strip() or None,
+                        )
+                        st.session_state.editing_list_item = None
+                        st.rerun()
+                elif el_cancelled:
+                    st.session_state.editing_list_item = None
+                    st.rerun()
+
+
+# ── Tab 3: Recommend ───────────────────────────────────────────────────────────
 with tab_recommend:
     if "recs" not in st.session_state:
         st.session_state.recs = None
@@ -265,6 +390,8 @@ with tab_recommend:
         st.session_state.adding_rec = None
     if "added_recs" not in st.session_state:
         st.session_state.added_recs = set()
+    if "added_to_list_recs" not in st.session_state:
+        st.session_state.added_to_list_recs = set()
 
     books = get_books()
     is_empty = len(books) == 0
@@ -283,6 +410,7 @@ with tab_recommend:
 
     if get_btn or regen_btn:
         st.session_state.added_recs = set()
+        st.session_state.added_to_list_recs = set()
         st.session_state.adding_rec = None
         with st.spinner("Asking Claude for recommendations…"):
             try:
@@ -301,43 +429,55 @@ with tab_recommend:
             st.markdown(rec["md"])
 
             if rec["title"] is None:
-                # Raw fallback — no add button
+                # Raw fallback — no add buttons
                 pass
-            elif i in st.session_state.added_recs:
-                st.success("Added to library ✓")
-            elif st.session_state.adding_rec == i:
-                with st.form(f"add_rec_form_{i}"):
-                    st.markdown(f"**{rec['title']}** by *{rec['author']}*")
-                    r_col1, r_col2 = st.columns(2)
-                    with r_col1:
-                        r_rating = st.slider("Rating", 1, 5, 3)
-                        r_fmt = st.selectbox("Format", ["print", "ebook", "audio"])
-                    with r_col2:
-                        r_status = st.selectbox("Status", ["read", "want", "dnf"])
-                        r_notes = st.text_area("Notes", height=68)
-                    b_col1, b_col2 = st.columns(2)
-                    confirmed = b_col1.form_submit_button("Add to Library")
-                    cancelled = b_col2.form_submit_button("Cancel")
-
-                if confirmed:
-                    add_book(
-                        title=rec["title"],
-                        author=rec["author"],
-                        year=rec["year"],
-                        rating=r_rating,
-                        format=r_fmt,
-                        status=r_status,
-                        notes=r_notes.strip() or None,
-                    )
-                    st.session_state.added_recs.add(i)
-                    st.session_state.adding_rec = None
-                    st.rerun()
-                elif cancelled:
-                    st.session_state.adding_rec = None
-                    st.rerun()
             else:
-                if st.button("+ Add to Library", key=f"add_rec_btn_{i}"):
-                    st.session_state.adding_rec = i
-                    st.rerun()
+                rb1, rb2 = st.columns(2)
+                with rb1:
+                    if i in st.session_state.added_recs:
+                        st.success("Library ✓")
+                    elif st.session_state.adding_rec != i:
+                        if st.button("+ Add to Library", key=f"add_rec_btn_{i}", use_container_width=True):
+                            st.session_state.adding_rec = i
+                            st.rerun()
+                with rb2:
+                    if i in st.session_state.added_to_list_recs:
+                        st.success("My List ✓")
+                    else:
+                        if st.button("+ Add to My List", key=f"add_list_btn_{i}", use_container_width=True):
+                            add_to_reading_list(title=rec["title"], author=rec["author"], year=rec["year"])
+                            st.session_state.added_to_list_recs.add(i)
+                            st.rerun()
+
+                if st.session_state.adding_rec == i:
+                    with st.form(f"add_rec_form_{i}"):
+                        st.markdown(f"**{rec['title']}** by *{rec['author']}*")
+                        r_col1, r_col2 = st.columns(2)
+                        with r_col1:
+                            r_rating = st.slider("Rating", 1, 5, 3)
+                            r_fmt = st.selectbox("Format", ["print", "ebook", "audio"])
+                        with r_col2:
+                            r_status = st.selectbox("Status", ["read", "want", "dnf"])
+                            r_notes = st.text_area("Notes", height=68)
+                        b_col1, b_col2 = st.columns(2)
+                        confirmed = b_col1.form_submit_button("Add to Library")
+                        cancelled = b_col2.form_submit_button("Cancel")
+
+                    if confirmed:
+                        add_book(
+                            title=rec["title"],
+                            author=rec["author"],
+                            year=rec["year"],
+                            rating=r_rating,
+                            format=r_fmt,
+                            status=r_status,
+                            notes=r_notes.strip() or None,
+                        )
+                        st.session_state.added_recs.add(i)
+                        st.session_state.adding_rec = None
+                        st.rerun()
+                    elif cancelled:
+                        st.session_state.adding_rec = None
+                        st.rerun()
 
             st.divider()
