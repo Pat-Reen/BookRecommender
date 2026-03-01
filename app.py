@@ -414,7 +414,7 @@ with tab_recommend:
 
     rec_col1, rec_col2 = st.columns([3, 1])
     get_btn = rec_col1.button("Recommend", disabled=is_empty, use_container_width=True)
-    regen_btn = rec_col2.button("↺ Regenerate", disabled=is_empty or not st.session_state.recs, use_container_width=True)
+    regen_btn = rec_col2.button("↺", disabled=is_empty or not st.session_state.recs, use_container_width=True)
 
     if get_btn or regen_btn:
         st.session_state.added_recs = set()
