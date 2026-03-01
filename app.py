@@ -64,8 +64,8 @@ st.markdown(
         border-bottom-color: #2d6a4f !important;
     }
 
-    /* Keep button rows horizontal on mobile */
-    [data-testid="stHorizontalBlock"] {
+    /* Keep button rows horizontal inside book cards on mobile */
+    [data-testid="stVerticalBlockBorderWrapper"] [data-testid="stHorizontalBlock"] {
         flex-wrap: nowrap !important;
     }
     </style>
@@ -207,10 +207,10 @@ with tab_library:
                 if b["notes"]:
                     st.caption(b["notes"])
                 btn_edit, btn_del = st.columns(2)
-                if btn_edit.button("✏️ Edit", key=f"edit_{b['id']}", use_container_width=True):
+                if btn_edit.button("✏️ Edit", key=f"edit_{b['id']}"):
                     st.session_state.editing_book = b["id"]
                     st.rerun()
-                if btn_del.button("🗑 Delete", key=f"del_{b['id']}", use_container_width=True):
+                if btn_del.button("🗑 Delete", key=f"del_{b['id']}"):
                     delete_book(b["id"])
                     if st.session_state.editing_book == b["id"]:
                         st.session_state.editing_book = None
@@ -274,9 +274,8 @@ with tab_recommend:
     if is_empty:
         st.warning("Add some books to your library first so Claude can tailor recommendations.")
 
-    btn_col1, btn_col2 = st.columns([4, 1])
-    get_btn = btn_col1.button("Get Recommendations", disabled=is_empty)
-    regen_btn = btn_col2.button("↺ Regenerate", disabled=is_empty or not st.session_state.recs)
+    get_btn = st.button("Get Recommendations", disabled=is_empty)
+    regen_btn = st.button("↺ Regenerate", disabled=is_empty or not st.session_state.recs)
 
     if get_btn or regen_btn:
         st.session_state.added_recs = set()
