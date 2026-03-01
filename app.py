@@ -75,6 +75,13 @@ st.markdown(
     [data-testid="stHorizontalBlock"] > div {
         min-width: 0;
     }
+
+    /* Book cards: spacing + subtle tint so they breathe */
+    [data-testid="stVerticalBlockBorderWrapper"] {
+        margin-bottom: 0.75rem;
+        background-color: #f4faf7;
+        border-radius: 8px !important;
+    }
     </style>
     """,
     unsafe_allow_html=True,
