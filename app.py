@@ -405,8 +405,8 @@ with tab_recommend:
     if is_empty:
         st.warning("Add some books to your library first so Claude can tailor recommendations.")
 
-    get_btn = st.button("Get Recommendations", disabled=is_empty)
-    regen_btn = st.button("↺ Regenerate", disabled=is_empty or not st.session_state.recs)
+    get_btn = st.button("Recommend", disabled=is_empty)
+    regen_btn = st.button("↺", disabled=is_empty or not st.session_state.recs)
 
     if get_btn or regen_btn:
         st.session_state.added_recs = set()
