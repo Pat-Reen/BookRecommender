@@ -56,6 +56,22 @@ def get_books():
     return [dict(r) for r in rows]
 
 
+def update_book(book_id, title, author, year=None, rating=None, format=None, status="read", notes=None):
+    con = _connect()
+    try:
+        with con.cursor() as cur:
+            cur.execute(
+                """
+                UPDATE books SET title=%s, author=%s, year=%s, rating=%s, format=%s, status=%s, notes=%s
+                WHERE id=%s
+                """,
+                (title, author, year, rating, format, status, notes, book_id),
+            )
+        con.commit()
+    finally:
+        con.close()
+
+
 def delete_book(book_id):
     con = _connect()
     try:

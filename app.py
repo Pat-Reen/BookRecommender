@@ -4,7 +4,7 @@ import anthropic
 import streamlit as st
 from dotenv import load_dotenv
 
-from db import init_db, add_book, get_books, delete_book
+from db import init_db, add_book, get_books, update_book, delete_book
 
 load_dotenv()
 
@@ -182,25 +182,72 @@ with tab_library:
                 st.success(f"Added «{title}»!")
                 st.rerun()
 
+    if "editing_book" not in st.session_state:
+        st.session_state.editing_book = None
+
     books = get_books()
     if not books:
         st.info("Your library is empty. Add some books above to get started.")
     else:
         st.markdown(f"**{len(books)} book{'s' if len(books) != 1 else ''} in your library**")
+        fmt_options = ["print", "ebook", "audio"]
+        status_options = ["read", "want", "dnf"]
         for b in books:
-            cols = st.columns([3, 2, 1, 1, 1, 1, 3, 1])
-            cols[0].write(b["title"])
-            cols[1].write(b["author"])
-            cols[2].write(str(b["year"]) if b["year"] else "—")
-            cols[3].write(stars(b["rating"]))
-            cols[4].write(b["format"] or "—")
-            cols[5].write(b["status"] or "—")
-            cols[6].write(b["notes"] or "")
-            if cols[7].button("🗑", key=f"del_{b['id']}"):
-                delete_book(b["id"])
-                st.rerun()
+            with st.container(border=True):
+                col_info, col_btns = st.columns([6, 1])
+                with col_info:
+                    year_str = f" ({b['year']})" if b["year"] else ""
+                    st.markdown(f"**{b['title']}**{year_str}  \n*{b['author']}*")
+                    meta = [p for p in [stars(b["rating"]) if b["rating"] else None, b["status"], b["format"]] if p]
+                    if meta:
+                        st.caption(" · ".join(meta))
+                    if b["notes"]:
+                        st.caption(b["notes"])
+                with col_btns:
+                    if st.button("✏️", key=f"edit_{b['id']}"):
+                        st.session_state.editing_book = b["id"]
+                        st.rerun()
+                    if st.button("🗑", key=f"del_{b['id']}"):
+                        delete_book(b["id"])
+                        if st.session_state.editing_book == b["id"]:
+                            st.session_state.editing_book = None
+                        st.rerun()
 
-        st.caption("Title · Author · Year · Rating · Format · Status · Notes")
+            if st.session_state.editing_book == b["id"]:
+                with st.form(f"edit_form_{b['id']}"):
+                    e_col1, e_col2 = st.columns(2)
+                    with e_col1:
+                        e_title = st.text_input("Title *", value=b["title"])
+                        e_author = st.text_input("Author *", value=b["author"])
+                        e_year = st.number_input("Year", min_value=0, max_value=2100, value=b["year"] or None, step=1)
+                    with e_col2:
+                        e_rating = st.slider("Rating", 1, 5, b["rating"] or 3)
+                        e_fmt = st.selectbox("Format", fmt_options, index=fmt_options.index(b["format"]) if b["format"] in fmt_options else 0)
+                        e_status = st.selectbox("Status", status_options, index=status_options.index(b["status"]) if b["status"] in status_options else 0)
+                    e_notes = st.text_area("Notes", value=b["notes"] or "")
+                    s_col1, s_col2 = st.columns(2)
+                    saved = s_col1.form_submit_button("Save")
+                    cancelled = s_col2.form_submit_button("Cancel")
+
+                if saved:
+                    if not e_title.strip() or not e_author.strip():
+                        st.error("Title and Author are required.")
+                    else:
+                        update_book(
+                            book_id=b["id"],
+                            title=e_title.strip(),
+                            author=e_author.strip(),
+                            year=int(e_year) if e_year else None,
+                            rating=e_rating,
+                            format=e_fmt,
+                            status=e_status,
+                            notes=e_notes.strip() or None,
+                        )
+                        st.session_state.editing_book = None
+                        st.rerun()
+                elif cancelled:
+                    st.session_state.editing_book = None
+                    st.rerun()
 
 
 # ── Tab 2: Recommend ───────────────────────────────────────────────────────────
