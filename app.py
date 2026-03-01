@@ -64,9 +64,13 @@ st.markdown(
         border-bottom-color: #2d6a4f !important;
     }
 
-    /* Keep button rows horizontal inside book cards on mobile */
-    [data-testid="stVerticalBlockBorderWrapper"] [data-testid="stHorizontalBlock"] {
+    /* Keep all column rows horizontal on mobile without overflowing */
+    [data-testid="stHorizontalBlock"] {
         flex-wrap: nowrap !important;
+        min-width: 0;
+    }
+    [data-testid="stHorizontalBlock"] > div {
+        min-width: 0;
     }
     </style>
     """,
@@ -207,10 +211,10 @@ with tab_library:
                 if b["notes"]:
                     st.caption(b["notes"])
                 btn_edit, btn_del = st.columns(2)
-                if btn_edit.button("✏️ Edit", key=f"edit_{b['id']}"):
+                if btn_edit.button("✏️ Edit", key=f"edit_{b['id']}", use_container_width=True):
                     st.session_state.editing_book = b["id"]
                     st.rerun()
-                if btn_del.button("🗑 Delete", key=f"del_{b['id']}"):
+                if btn_del.button("🗑 Delete", key=f"del_{b['id']}", use_container_width=True):
                     delete_book(b["id"])
                     if st.session_state.editing_book == b["id"]:
                         st.session_state.editing_book = None
