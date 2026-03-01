@@ -304,7 +304,7 @@ with tab_list:
                     st.caption(item["notes"])
 
                 b1, b2, b3 = st.columns(3)
-                if b1.button("📚 Move to Library", key=f"move_list_{item['id']}", use_container_width=True):
+                if b1.button("📚 Read", key=f"move_list_{item['id']}", use_container_width=True):
                     st.session_state.moving_list_item = item["id"]
                     st.session_state.editing_list_item = None
                     st.rerun()
@@ -331,7 +331,7 @@ with tab_list:
                         m_status = st.selectbox("Status", ["read", "want", "dnf"])
                         m_notes = st.text_area("Notes", value=item["notes"] or "", height=68)
                     mc1, mc2 = st.columns(2)
-                    move_confirmed = mc1.form_submit_button("Move to Library")
+                    move_confirmed = mc1.form_submit_button("Read")
                     move_cancelled = mc2.form_submit_button("Cancel")
 
                 if move_confirmed:
